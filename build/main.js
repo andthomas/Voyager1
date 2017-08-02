@@ -11,17 +11,24 @@ $.ajax({
   }
 })
 .done( function( data ) {
-    for (var i = 0; i < data.length; i = i+13) {
+    for (var i = 0; i < 539; i = i+20) {
       trajectoryPoints.push(new THREE.Vector3(
-        data[i]["x"],
-        data[i]["y"],
-        data[i]["z"]
+        data[i].x,
+        data[i].y,
+        data[i].z
+      ));
+    }
+    for (var i = 539; i < data.length; i = i+100) {
+      trajectoryPoints.push(new THREE.Vector3(
+        data[i].x,
+        data[i].y,
+        data[i].z
       ));
     }
     var catmull = new THREE.CatmullRomCurve3( trajectoryPoints );
     // debugger;
     app.line = app.createLineFromSpline( catmull );
-    app.line.rotation.z = Math.PI / 2;
+    // app.line.rotation.y = 1.5 * Math.PI;
     app.scene.add( app.line );
 })
 
@@ -46,12 +53,6 @@ app.init = function(){
   app.renderer.setSize( app.width, app.height );
   app.renderer.setClearColor( 0x000000, 1 )
 
-  // Camera has: field of view, ratio, near, far
-  app.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000000000)
-  app.camera.lookAt( app.planetStart[2]["x"], app.planetStart[2]["z"], app.planetStart[2]["y"]);
-  app.camera.position.set(-150000,2000,0);
-
-  app.scene.add( app.camera );
 
   // Add lights
   app.spotlight = app.createSpotlight();
@@ -87,6 +88,11 @@ app.init = function(){
   pluto = app.createPlanet( app.planetData[8]["orbitalRadius"], app.planetData[8]["planetRadius"], app.planetStart[8]["x"], app.planetStart[8]["y"], app.planetStart[8]["z"]  );
   app.scene.add( pluto );
 
+  // {"year":1979,"doy":50,"y":10000,"z":-472729,"x":626815},
+
+  testPlanet = app.createPlanet( 1000, 20000, 611855, 10000, -427850  );
+  app.scene.add( testPlanet );
+
   // Lines showing orbits - could put in loop, but wont for time being in case explicit circles needed for animation
   app.mercuryOrbit = app.createCircle( app.planetData[0]["orbitalRadius"], app.planetData[0]["angle"] );
   app.scene.add( app.mercuryOrbit[0] )
@@ -121,9 +127,19 @@ app.init = function(){
   app.stars = app.createStars()
   app.scene.add( app.stars )
 
+  // var pt = earthPath.getPoint( t );
+  // earth.position.set( pt.x, pt.y, pt.z );
+
+  // Camera has: field of view, ratio, near, far
+  app.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000000000)
+  app.camera.lookAt( app.planetStart[9].x, app.planetStart[9].y, app.planetStart[9].z);
+  app.camera.position.set(0,20000,0);
+
+  app.scene.add( app.camera );
+
   //Orbital controls to move around space
   app.controls = new THREE.OrbitControls( app.camera, app.renderer.domElement );
-  app.controls.target.set( app.planetStart[2]["x"], app.planetStart[2]["y"], app.planetStart[2]["z"] );
+  app.controls.target.set( app.planetStart[9].x, app.planetStart[9].y, app.planetStart[9].z );
 
   // Attach renderer to the page
   document.getElementById("output").appendChild( app.renderer.domElement );
@@ -142,14 +158,15 @@ app.planetStart =
 {"planet":"Saturn","x":-1088636.062,"z":840858.7392,"y":29015.01566},
 {"planet":"Uranus","x":-2067029.369,"z":-1861760.835,"y":19855.84114},
 {"planet":"Neptune","x":-1134492.103,"z":-4383695.487,"y":116203.7514},
-{"planet":"Pluto","x":-4225812.662,"z":-1060539.951,"y":1336833.515}]
+{"planet":"Pluto","x":-4225812.662,"z":-1060539.951,"y":1336833.515},
+{"planet":"Test","x":-38895,"z":-1413700,"y":10000}]
 
 app.planetData =
   [{"planet":"Mercury","orbitalRadius":57900.00,"planetRadius":2.44, "angle":1.446878},
   {"planet":"Venus","orbitalRadius":108200.00,"planetRadius":6.05, "angle":1.5116297},
   {"planet":"Earth","orbitalRadius":149600.00,"planetRadius":6.38, "angle":1.5708},
   {"planet":"Mars","orbitalRadius":227900.00,"planetRadius":3.39, "angle":1.5385077},
-  {"planet":"Jupiter","orbitalRadius":778300.00,"planetRadius":71.40, "angle":1.5479325},
+  {"planet":"Jupiter","orbitalRadius":783300.00,"planetRadius":71.40, "angle":1.5479325},
   {"planet":"Saturn","orbitalRadius":1427000.00,"planetRadius":60.33, "angle":1.5273376},
   {"planet":"Uranus","orbitalRadius":2871000.00,"planetRadius":25.56, "angle":1.5591026},
   {"planet":"Neptune","orbitalRadius":4497100.00,"planetRadius":24.30, "angle":1.5416493},
@@ -176,11 +193,11 @@ app.createSun = function(){
 };
 
 app.createPlanet = function( orbit, radius, xPosition, yPosition, zPosition ){
-  var sphereGeometry = new THREE.SphereGeometry( radius, 30, 30 );
+  var sphereGeometry = new THREE.SphereGeometry( 3000, 30, 30 );
   var material  = new THREE.MeshPhongMaterial()
   material.map = THREE.TextureLoader('assets/sun_detailed.png')
   var planet = new THREE.Mesh( sphereGeometry, material );
-  // planet.position.set( xPosition, yPosition, zPosition );
+  planet.position.set( xPosition, yPosition, zPosition );
   return planet;
 };
 
@@ -221,9 +238,9 @@ sunPoint.position.set( 0, 350, 0 );
 
 
 app.animate = function(){
-  app.renderer.render( app.scene, app.camera );
-  requestAnimationFrame( app.animate );
+  // app.renderer.render( app.scene, app.camera );
   app.render()
+  requestAnimationFrame( app.animate );
 };
 
 app.render = function() {
@@ -232,12 +249,14 @@ app.render = function() {
   var pm = mercuryPath.getPoint( t );
   var pv = venusPath.getPoint( t );
   var pt = earthPath.getPoint( t );
+  // console.log('earth point', t, pt);
   var pma = marsPath.getPoint( t );
   var pj = jupiterPath.getPoint( t );
   var ps = saturnPath.getPoint( t );
   var pu = uranusPath.getPoint( t );
   var pn = neptunePath.getPoint( t );
   var pp = plutoPath.getPoint( t );
+
 
 
   mercury.position.set( pm.x, pm.y, pm.z );
@@ -250,7 +269,7 @@ app.render = function() {
   neptune.position.set( pn.x, pn.y, pn.z );
   pluto.position.set( pp.x, pp.y, pp.z );
 
-  // t = (t >= 1) ? 0 : t += 0.0000005;
+  t = (t >= 1) ? 0 : t += 0.00000005;
 
   app.renderer.render( app.scene, app.camera );
 }
