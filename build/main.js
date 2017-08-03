@@ -1,5 +1,7 @@
 var app = app || {};
 
+
+
 //Define globals
 var mercuryPath, venusPath, earthPath, marsPath, jupiterPath, saturnPath, uranusPath, neptunePath, plutoPath;
 
@@ -121,18 +123,52 @@ app.init = function(){
   app.sun.scale.set(600,600,600)
   app.scene.add( app.sun );
 
-  // var camCirc = new THREE.SphereGeometry(1, 1, 1);
-  // var camMat = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.5});
-  // voyagerCam = new THREE.Mesh( camCirc, camMat );
-  // // debugger;
-  // voyagerCam.position.set(-31430.2, 1, 146248.8);
-  // // debugger
-  // if ( typeof voyagerCam !== 'undefined' ) {
-  //   // debugger
-  //   console.log(voyagerCam)
-  //   voyagerCam.add( app.camera )
-  //   app.scene.add( voyagerCam );
-  // }
+  // Add daydream controller
+  $('#button').on( 'click', function () {
+    console.log("clicked!");
+    var controller = new DaydreamController();
+    controller.onStateChange( function ( state ) {
+      // console.log(JSON.stri  ngify( state, null, '\t' ));
+      if ( app.camera !== undefined ) {
+        var angle = Math.sqrt( state.xOri * state.xOri + state.yOri * state.yOri + state.zOri * state.zOri );
+        if ( angle > 0 ) {
+          axis.set( state.xOri, state.yOri, state.zOri )
+          axis.multiplyScalar( 1 / angle );
+          quaternion.setFromAxisAngle( axis, angle );
+          if ( initialised === false ) {
+            quaternionHome.copy( quaternion );
+            quaternionHome.inverse();
+            initialised = true;
+          }
+        } else {
+          quaternion.set( 0, 0, 0, 1 );
+        }
+        if ( state.isHomeDown ) {
+          if ( timeout === null ) {
+            timeout = setTimeout( function () {
+              quaternionHome.copy( quaternion );
+              quaternionHome.inverse();
+            }, 1000 );
+          }
+        } else {
+          if ( timeout !== null ) {
+            clearTimeout( timeout );
+            timeout = null;
+          }
+        }
+        app.camera.quaternion.copy( quaternionHome );
+        app.camera.quaternion.multiply( quaternion );
+        // button1.material.emissive.g = state.isClickDown ? 0.5 : 0;
+        // button2.material.emissive.g = state.isAppDown ? 0.5 : 0;
+        // button3.material.emissive.g = state.isHomeDown ? 0.5 : 0;
+        // touch.position.x = ( state.xTouch * 2 - 1 ) / 1000;
+        // touch.position.y = - ( state.yTouch * 2 - 1 ) / 1000;
+        // touch.visible = state.xTouch > 0 && state.yTouch > 0;
+      }
+    } );
+
+    controller.connect();
+  } );
 
   var spriteMaterial = new THREE.SpriteMaterial(
   {
@@ -437,11 +473,11 @@ app.render = function() {
       day += 1.59*app.controller.rotationSpeed;
       i = Math.floor(day)
       // debugger;
-      $("#doy").text("Day: " + infoPoints[i].doy)
-      $("#year").text("Year: " + infoPoints[i].year)
-      $("#x").text("X: " + infoPoints[i].x + " x 10^3 km")
-      $("#y").text("Y: " + infoPoints[i].y + " x 10^3 km")
-      $("#z").text("Z: " + infoPoints[i].z + " x 10^3 km")
+      $("#doy").text("Day:      " + infoPoints[i].doy)
+      $("#year").text("Year:      " + infoPoints[i].year)
+      $("#x").text("X:      " + infoPoints[i].x + " x 10^3 km")
+      $("#y").text("Y:      " + infoPoints[i].y + " x 10^3 km")
+      $("#z").text("Z:      " + infoPoints[i].z + " x 10^3 km")
       // console.log(infoPoints[i].doy)
       // console.log(infoPoints[i].year)
     }
@@ -518,5 +554,18 @@ app.addStats = function(){
   document.getElementById("stats").appendChild(stats.domElement);
   return stats;
 }
+
+if ( 'bluetooth' in navigator === false ) {
+  button.style.display = 'none';
+  message.innerHTML = 'This browser doesn\'t support the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API" target="_blank">Web Bluetooth API</a> :(';
+}
+
+var axis = new THREE.Vector3();
+var quaternion = new THREE.Quaternion();
+var quaternionHome = new THREE.Quaternion();
+var initialised = false;
+var timeout = null;
+
+
 
 window.addEventListener("resize", app.onResize, false);
