@@ -3,17 +3,25 @@ var app = app || {};
 //Define globals
 var mercuryPath, venusPath, earthPath, marsPath, jupiterPath, saturnPath, uranusPath, neptunePath, plutoPath;
 
+var m = 0.2163;
+var v = 0.4663;
 var t = 0;
 var e = 0.2163;
-var j = 0.238;
-var mercury, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto;
+var ma = 0.43;
+var j = 0.395;
+var s = 0.566;
+var n = 0.01;
+var u = 0.96;
+var p = 0.05;
+
+var mercury, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto, voyager;
 var trajectoryPoints = [];
 var voyagerPath;
 
 //Dat GUI controller default values
 app.controller = {
-  rotationSpeed: 0,
-  toScale: false
+  rotationSpeed: 0.00,
+  planetScale: 1
 };
 
 $.ajax({
@@ -31,9 +39,26 @@ $.ajax({
       ));
     }
     voyagerPath = new THREE.CatmullRomCurve3( trajectoryPoints );
-    // debugger;
     app.line = app.createLineFromSpline( voyagerPath );
-    // app.line.rotation.y = 1.5 * Math.PI;
+
+    function addModelToScene( geometry, materials ) {
+      var material = new THREE.MeshFaceMaterial(materials);
+      voyager = new THREE.Mesh( geometry, material );
+      voyager.scale.set(40,40,40);
+      voyager.position.set(-31430.2, 1, 146248.8);
+      app.scene.add( voyager );
+      voyager.add( app.camera )
+
+      // voyager.rotation.x = Math.PI / 2;
+      // voyager.rotation.y = Math.PI / 2;
+      // voyager.rotation.z = Math.PI;
+    }
+
+    var loader = new THREE.JSONLoader();
+    loader.load( "models/Voyager_one.json", addModelToScene)
+
+})
+.done(function(){
     app.init()
     app.scene.add( app.line );
 })
@@ -55,27 +80,41 @@ app.init = function(){
   app.renderer.setSize( app.width, app.height );
   app.renderer.setClearColor( 0x000000, 1 )
 
-
   // Add lights
   app.spotlight = app.createSpotlight();
+  app.spotlight.position.set( 100, 0, 0 );
   app.scene.add( app.spotlight );
 
-  app.ambient = new THREE.AmbientLight( 0x555555 );
+  app.spotlight1 = app.createSpotlight();
+  app.spotlight1.position.set( -100, 0, 0 );
+  app.scene.add( app.spotlight1 );
+
+  app.spotlight2 = app.createSpotlight();
+  app.spotlight2.position.set( 0, 0, 100 );
+  app.scene.add( app.spotlight2 );
+
+  app.spotlight2 = app.createSpotlight();
+  app.spotlight2.position.set( 0, 0, -100 );
+  app.scene.add( app.spotlight2 );
+
+  app.ambient = new THREE.AmbientLight( 0xa1a1a1 );
   app.scene.add( app.ambient );
 
-  app.scene.add(sunPoint);
-  app.scene.add(new THREE.PointLightHelper(sunPoint, 3));
-
   // Add Sun
-  app.sun = app.createSun();
-  // app.scene.add( app.sun );
+  app.sun = THREEx.Planets.createSun()
+  app.sun.scale.set(600,600,600)
+  app.scene.add( app.sun );
+  // debugger;
 
   //Add Planets
   mercury = app.createPlanet( app.planetData[0]["orbitalRadius"], app.planetData[0]["planetRadius"], app.planetStart[0]["x"], app.planetStart[0]["y"], app.planetStart[0]["z"] );
   app.scene.add( mercury );
   venus = app.createPlanet( app.planetData[1]["orbitalRadius"], app.planetData[1]["planetRadius"], app.planetStart[1]["x"], app.planetStart[1]["y"], app.planetStart[1]["z"]  );
   app.scene.add( venus );
-  earth = app.createPlanet( app.planetData[2]["orbitalRadius"], app.planetData[2]["planetRadius"], app.planetStart[2]["x"], app.planetStart[2]["y"], app.planetStart[2]["z"]  );
+  // earth = app.createPlanet( app.planetData[2]["orbitalRadius"], app.planetData[2]["planetRadius"], app.planetStart[2]["x"], app.planetStart[2]["y"], app.planetStart[2]["z"]  );
+  earth = THREEx.Planets.createEarth()
+  var earthRadius = app.planetData[2]["planetRadius"] * 100
+  earth.scale.set(earthRadius, earthRadius, earthRadius)
   app.scene.add( earth );
   mars = app.createPlanet( app.planetData[3]["orbitalRadius"], app.planetData[3]["planetRadius"], app.planetStart[3]["x"], app.planetStart[3]["y"], app.planetStart[3]["z"]  );
   app.scene.add( mars );
@@ -120,39 +159,30 @@ app.init = function(){
   neptunePath = app.neptuneOrbit[1]
   plutoPath = app.plutoOrbit[1]
 
-
   //Add the stars to the scene
   app.stars = app.createStars()
   // app.scene.add( app.stars )
 
-  //Add spacecraft to the scene
-  app.voyager = []
-
-  function addModelToScene( geometry, materials ) {
-    var material = new THREE.MeshFaceMaterial(materials);
-    model = new THREE.Mesh( geometry, material );
-    model.scale.set(3000,3000,3000);
-    model.position.set(0,0,0);
-    app.voyager.push( model )
-    app.scene.add( model );
-  }
-
-  var loader = new THREE.JSONLoader();
-  loader.load( "models/Voyager_1_1.js", addModelToScene)
-  loader.load( "models/Voyager_1_2.js", addModelToScene)
-  loader.load( "models/Voyager_1_3.js", addModelToScene)
+  // var loader = new THREE.STLLoader();
+  // loader.load( './models/stl/slotted_disk.stl', function ( geometry ) {
+  // scene.add( new THREE.Mesh( geometry ) );
+  // });
 
   // Camera has: field of view, ratio, near, far
   app.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000000000)
-
-  app.camera.position.set(-400000,200000,100000);
+  app.camera.position.set(60,10,-10);
   app.camera.lookAt( app.scene.position );
-
   app.scene.add( app.camera );
 
-  testPlanet = app.createPlanet( 0.01, 1, -31430.2, 1, 146248.8  );
-  testPlanet.add( app.camera )
-  app.scene.add( testPlanet );
+  //Add background
+  var sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(10000, 32, 32),
+    new THREE.MeshBasicMaterial({
+      map: THREE.TextureLoader('assets/milky2.png')
+    })
+  );
+  sphere.scale.x = -1;
+  // app.scene.add(sphere)
 
   //Orbital controls to move around space
   app.controls = new THREE.OrbitControls( app.camera, app.renderer.domElement );
@@ -160,7 +190,8 @@ app.init = function(){
 
   //Dat gui controller
   app.gui = new dat.GUI();
-  app.gui.add( app.controller, 'rotationSpeed', -2, 2 );
+  app.gui.add( app.controller, 'rotationSpeed', 0, 2.0 );
+  app.gui.add( app.controller, 'planetScale', 1.0, 500.0 );
 
   // Attach renderer to the page
   document.getElementById("output").appendChild( app.renderer.domElement );
@@ -195,7 +226,6 @@ app.planetData =
 
 app.createSpotlight = function(){
   var spotlight = new THREE.SpotLight( 0xCCCCCC );
-  spotlight.position.set( 6300000, 60, 10 );
   return spotlight;
 };
 
@@ -205,6 +235,7 @@ app.createSun = function(){
     transparent: true,
       opacity: 0.85, // 0.8
   })
+
   material.map = THREE.TextureLoader('assets/sun_detailed.png')
   material.bumpMap = THREE.TextureLoader('assets/sun-alpha-2k.jpg')
   material.bumpScale = 0.05
@@ -213,8 +244,22 @@ app.createSun = function(){
   return sun;
 };
 
+app.addEarth = function(){
+  var geometry   = new THREE.SphereGeometry(1000, 32, 32)
+  var material  = new THREE.MeshPhongMaterial({
+    map     : new THREE.Texture(canvasCloud),
+    side        : THREE.DoubleSide,
+    opacity     : 0.8,
+    transparent : true,
+    depthWrite  : false,
+  })
+  var cloudMesh = new THREE.Mesh(geometry, material)
+  earthMesh.add(cloudMesh)
+}
+
 app.createPlanet = function( orbit, radius, xPosition, yPosition, zPosition ){
-  var sphereGeometry = new THREE.SphereGeometry( 100, 30, 30 );
+  radius = radius * 20;
+  var sphereGeometry = new THREE.SphereGeometry( radius, 30, 30 );
   var material  = new THREE.MeshPhongMaterial()
   material.map = THREE.TextureLoader('assets/sun_detailed.png')
   var planet = new THREE.Mesh( sphereGeometry, material );
@@ -224,7 +269,7 @@ app.createPlanet = function( orbit, radius, xPosition, yPosition, zPosition ){
 
 app.createLineFromSpline = function( spline ){
   var lineMaterial = new THREE.LineBasicMaterial({
-    color: 0xc2deff
+    color: 0x818181
   });
   var lineGeometry = new THREE.Geometry();
   lineGeometry.vertices = spline.getPoints( 10000 );
@@ -254,8 +299,8 @@ app.createCircle = function( radius, angle ){
   return [linePath, planetPath]
 }
 
-var sunPoint = new THREE.PointLight(0xffe600, 3, 150);
-sunPoint.position.set( 0, 350, 0 );
+// var sunPoint = new THREE.PointLight(0xffe600, 3, 150);
+// sunPoint.position.set( 0, 350, 0 );
 
 
 app.animate = function(){
@@ -267,15 +312,16 @@ app.animate = function(){
 app.render = function() {
 
   // sets initial position of planet based on CatmullRomCurve3
-  var pm = mercuryPath.getPoint( e );
-  var pv = venusPath.getPoint( e );
+  var pm = mercuryPath.getPoint( m );
+  var pv = venusPath.getPoint( v );
   var pt = earthPath.getPoint( e );
-  var pma = marsPath.getPoint( e );
+  var pma = marsPath.getPoint( ma );
   var pj = jupiterPath.getPoint( j );
-  var ps = saturnPath.getPoint( e );
-  var pu = uranusPath.getPoint( e );
-  var pn = neptunePath.getPoint( e );
-  var pp = plutoPath.getPoint( e );
+  var ps = saturnPath.getPoint( s );
+  var pu = uranusPath.getPoint( n );
+  var pn = neptunePath.getPoint( u );
+  var pp = plutoPath.getPoint( p );
+
   var vp = voyagerPath.getPoint( t );
 
   mercury.position.set( pm.x, pm.y, pm.z );
@@ -287,22 +333,23 @@ app.render = function() {
   uranus.position.set( pu.x, pu.y, pu.z );
   neptune.position.set( pn.x, pn.y, pn.z );
   pluto.position.set( pp.x, pp.y, pp.z );
-  testPlanet.position.set( vp.x, vp.y, vp.z );
+
+  if ( voyager ){
+    voyager.position.set( vp.x, vp.y, vp.z );
+  }
+
+  m = (m >= 1) ? 0 : m += 0.01451705*app.controller.rotationSpeed;
+  v = (v >= 1) ? 0 : v += 0.00567778*app.controller.rotationSpeed;
+  e = (e >= 1) ? 0 : e += 0.0035*app.controller.rotationSpeed;
+  ma = (ma >= 1) ? 0 : ma += 0.00185953*app.controller.rotationSpeed;
+  j = (j >= 1) ? 0 : j += 0.00029167*app.controller.rotationSpeed;
+  s = (s >= 1) ? 0 : s += 0.00012069*app.controller.rotationSpeed;
+  u = (u >= 1) ? 0 : u += 0.00004167*app.controller.rotationSpeed;
+  n = (n >= 1) ? 0 : n += 0.00002121*app.controller.rotationSpeed;
+  p = (p >= 1) ? 0 : p += 0.00001411*app.controller.rotationSpeed;
 
   t = (t >= 1) ? 0 : t += 0.00005*app.controller.rotationSpeed;
-  e = (e >= 1) ? 0 : e += 0.00005*app.controller.rotationSpeed;
-  j = (j >= 1) ? 0 : j += 0.0005*app.controller.rotationSpeed;
-
-
-  // var relativeCameraOffset = new THREE.Vector3(0,50,200);
-  // debugger;
-	// var cameraOffset = relativeCameraOffset
-
-  // app.camera.position.x = 0;
-	// app.camera.position.y = 50;
-	// app.camera.position.z = 200;
-
-	app.camera.lookAt( app.sun.position );
+	// app.camera.lookAt( app.sun.position );
 
   app.stats.update();
   app.renderer.render( app.scene, app.camera );
