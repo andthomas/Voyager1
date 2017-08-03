@@ -2,12 +2,29 @@ body {
   margin: 0;
 }
 
-#info {
-	position: absolute;
-	bottom: 0px;
-	width: 100%;
-	text-align: center;
+#container{
+  font-family: 'Droid Sans', sans-serif;
+  background-color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+	top: 130px;
+  right: 14px;
+	width: 230px;
+	text-align: right;
 	z-index: 100;
 	display:block;
   color: white;
+  border: 1px solid white;
+  padding-right: 10px;
+}
+
+#doy, #year {
+
+	/*position: absolute;*/
+	/*bottom: 0px;*/
+	width: 100%;
+	/*text-align: center;*/
+	z-index: 100;
+	display:block;
+  color: white;
+  /*border: 10px solid white;*/
 }
