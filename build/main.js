@@ -1,7 +1,5 @@
 var app = app || {};
 
-
-
 //Define globals
 var mercuryPath, venusPath, earthPath, marsPath, jupiterPath, saturnPath, uranusPath, neptunePath, plutoPath;
 
@@ -17,18 +15,31 @@ var u = 0.96;
 var p = 0.05;
 var day = 1;
 
-var mercury, venus, earth, mesh, mars, jupiter, saturn, saturnRings, uranus, neptune, pluto, voyager, voyagerCam;
+var sun, mercury, venus, earth, mesh, mars, jupiter, saturn, saturnRings, uranus, neptune, pluto, voyager, voyagerCam;
 var trajectoryPoints = [];
 var infoPoints = [];
 var voyagerPath;
 var displayTrajectories;
+
+//Set up daydream variables
+if ( 'bluetooth' in navigator === false ) {
+  button.style.display = 'none';
+  message.innerHTML = 'This browser doesn\'t support the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API" target="_blank">Web Bluetooth API</a> :(';
+}
+
+var axis = new THREE.Vector3();
+var quaternion = new THREE.Quaternion();
+var quaternionHome = new THREE.Quaternion();
+var initialised = false;
+var timeout = null;
 
 //Dat GUI controller default values
 app.controller = {
   rotationSpeed: 0.0004,
   sunScale: 1,
   planetScale: 500,
-  displayTrajectories: true
+  displayTrajectories: true,
+  view: "voyager"
 };
 
 $.ajax({
@@ -57,7 +68,6 @@ $.ajax({
       voyager.scale.set(40,40,40);
       voyager.position.set(-31430.2, 1, 146248.8);
       app.scene.add( voyager );
-      voyager.add( app.camera )
 
       // voyager.rotation.x = 1.5 *  Math.PI;
       // voyager.rotation.y = Math.PI / 2;
@@ -70,7 +80,7 @@ $.ajax({
 })
 .done(function(){
     app.init()
-    // app.scene.add( app.line );
+    app.scene.add( app.line );
 })
 
 app.init = function(){
@@ -83,7 +93,7 @@ app.init = function(){
 
   //Axes
   app.axes = new THREE.AxisHelper( 2000 );
-  app.scene.add( app.axes );
+  // app.scene.add( app.axes );
 
   // Renderer
   app.renderer = new THREE.WebGLRenderer();
@@ -91,20 +101,26 @@ app.init = function(){
   app.renderer.setClearColor( 0x000000, 1 )
 
   // Add lights
+
+  // for (var i = 0; i < 5; i++) {
+  //   app.spotlight = app.createSpotlight();
+  //   app.spotlight.position.set( 10000, 0, 0 );
+  //   app.scene.add( app.spotlight );
+  // }
   app.spotlight = app.createSpotlight();
-  app.spotlight.position.set( 10000, 0, 0 );
+  app.spotlight.position.set( 10000, 10000, 0 );
   app.scene.add( app.spotlight );
 
   app.spotlight1 = app.createSpotlight();
-  app.spotlight1.position.set( -10000, 0, 0 );
+  app.spotlight1.position.set( -10000, -10000, 0 );
   app.scene.add( app.spotlight1 );
 
   app.spotlight2 = app.createSpotlight();
-  app.spotlight2.position.set( 0, 0, 10000 );
+  app.spotlight2.position.set( 0, 10000, 10000 );
   app.scene.add( app.spotlight2 );
 
   app.spotlight4 = app.createSpotlight();
-  app.spotlight4.position.set( 0, 0, -10000 );
+  app.spotlight4.position.set( 0, -10000, -10000 );
   app.scene.add( app.spotlight4 );
 
   app.spotlight3 = app.createSpotlight();
@@ -119,16 +135,15 @@ app.init = function(){
   app.scene.add( app.ambient );
 
   // Add Sun
-  app.sun = THREEx.Planets.createSun()
-  app.sun.scale.set(600,600,600)
-  app.scene.add( app.sun );
+  sun = THREEx.Planets.createSun()
+  sun.scale.set(600,600,600)
+  app.scene.add( sun );
 
   // Add daydream controller
   $('#button').on( 'click', function () {
-    console.log("clicked!");
+    console.log("Initialise daydream");
     var controller = new DaydreamController();
     controller.onStateChange( function ( state ) {
-      // console.log(JSON.stri  ngify( state, null, '\t' ));
       if ( app.camera !== undefined ) {
         var angle = Math.sqrt( state.xOri * state.xOri + state.yOri * state.yOri + state.zOri * state.zOri );
         if ( angle > 0 ) {
@@ -161,9 +176,9 @@ app.init = function(){
         // button1.material.emissive.g = state.isClickDown ? 0.5 : 0;
         // button2.material.emissive.g = state.isAppDown ? 0.5 : 0;
         // button3.material.emissive.g = state.isHomeDown ? 0.5 : 0;
-        // touch.position.x = ( state.xTouch * 2 - 1 ) / 1000;
-        // touch.position.y = - ( state.yTouch * 2 - 1 ) / 1000;
-        // touch.visible = state.xTouch > 0 && state.yTouch > 0;
+        touch.position.x = ( state.xTouch * 2 - 1 ) / 1000;
+        touch.position.y = - ( state.yTouch * 2 - 1 ) / 1000;
+        touch.visible = state.xTouch > 0 && state.yTouch > 0;
       }
     } );
 
@@ -177,28 +192,21 @@ app.init = function(){
     color: 0xe6af2e, transparent: false, blending: THREE.AdditiveBlending
   });
   var sprite = new THREE.Sprite( spriteMaterial );
-  sprite.scale.set(0.2, 0.2, 0.2);
-  app.sun.add(sprite); // this centers the glow at the mesh
+  sprite.scale.set(0.01, 0.01, 0.01);
+  sun.add(sprite); // this centers the glow at the sun
   // debugger;
 
-  // app.starfield = THREEx.Planets.createStarfield()
-  // app.starfield.scale.set(100000, 100000, 100000)
-  // app.scene.add( app.starfield )
-
   //Add Planets
-  // mercury = app.createPlanet( app.planetData[0]["orbitalRadius"], app.planetData[0]["planetRadius"], app.planetStart[0]["x"], app.planetStart[0]["y"], app.planetStart[0]["z"] );
   mercury = THREEx.Planets.createMercury()
   var mercuryRadius = app.planetData[0]["planetRadius"] * 500
   mercury.scale.set(mercuryRadius, mercuryRadius, mercuryRadius)
   app.scene.add( mercury );
 
-  // venus = app.createPlanet( app.planetData[1]["orbitalRadius"], app.planetData[1]["planetRadius"], app.planetStart[1]["x"], app.planetStart[1]["y"], app.planetStart[1]["z"]  );
   venus = THREEx.Planets.createVenus()
   var venusRadius = app.planetData[1]["planetRadius"] * 500
   venus.scale.set(venusRadius, venusRadius, venusRadius)
   app.scene.add( venus );
 
-  // earth = app.createPlanet( app.planetData[2]["orbitalRadius"], app.planetData[2]["planetRadius"], app.planetStart[2]["x"], app.planetStart[2]["y"], app.planetStart[2]["z"]  );
   earth = THREEx.Planets.createEarth()
   earth.material.shininess = 10000000
   var earthRadius = app.planetData[2]["planetRadius"] * 500
@@ -208,19 +216,16 @@ app.init = function(){
   mesh.scale.set(earthRadius, earthRadius, earthRadius)
 	app.scene.add(mesh)
 
-  // mars = app.createPlanet( app.planetData[3]["orbitalRadius"], app.planetData[3]["planetRadius"], app.planetStart[3]["x"], app.planetStart[3]["y"], app.planetStart[3]["z"]  );
   mars = THREEx.Planets.createMars()
   var marsRadius = app.planetData[3]["planetRadius"] * 500
   mars.scale.set(marsRadius, marsRadius, marsRadius)
   app.scene.add( mars );
 
-  // jupiter = app.createPlanet( app.planetData[4]["orbitalRadius"], app.planetData[4]["planetRadius"], app.planetStart[4]["x"], app.planetStart[4]["y"], app.planetStart[4]["z"]  );
   jupiter = THREEx.Planets.createJupiter()
   var jupiterRadius = app.planetData[4]["planetRadius"] * 500;
   jupiter.scale.set(jupiterRadius, jupiterRadius, jupiterRadius)
   app.scene.add( jupiter );
 
-  // saturn = app.createPlanet( app.planetData[5]["orbitalRadius"], app.planetData[5]["planetRadius"], app.planetStart[5]["x"], app.planetStart[5]["y"], app.planetStart[5]["z"]  );
   saturn = THREEx.Planets.createSaturn()
   var saturnRadius = app.planetData[5]["planetRadius"] * 500;
   saturn.scale.set(saturnRadius, saturnRadius, saturnRadius)
@@ -228,21 +233,17 @@ app.init = function(){
   // var saturnRings	= THREEx.Planets.createSaturnRing()
   // saturnRings.scale.set(saturnRadius, saturnRadius, saturnRadius)
   // app.scene.add(saturnRings)
-  // debugger
 
-  // uranus = app.createPlanet( app.planetData[6]["orbitalRadius"], app.planetData[6]["planetRadius"], app.planetStart[6]["x"], app.planetStart[6]["y"], app.planetStart[6]["z"]  );
   uranus = THREEx.Planets.createUranus()
   var uranusRadius = app.planetData[6]["planetRadius"] * 500;
   uranus.scale.set(uranusRadius, uranusRadius, uranusRadius)
   app.scene.add( uranus );
 
-  // neptune = app.createPlanet( app.planetData[7]["orbitalRadius"], app.planetData[7]["planetRadius"], app.planetStart[7]["x"], app.planetStart[7]["y"], app.planetStart[7]["z"]  );
   neptune = THREEx.Planets.createNeptune()
   var neptuneRadius = app.planetData[7]["planetRadius"] * 500;
   neptune.scale.set(neptuneRadius, neptuneRadius, neptuneRadius)
   app.scene.add( neptune );
 
-  // pluto = app.createPlanet( app.planetData[8]["orbitalRadius"], app.planetData[8]["planetRadius"], app.planetStart[8]["x"], app.planetStart[8]["y"], app.planetStart[8]["z"]  );
   pluto = THREEx.Planets.createPluto()
   var plutoRadius = app.planetData[8]["planetRadius"] * 500;
   pluto.scale.set(plutoRadius, plutoRadius, plutoRadius)
@@ -278,45 +279,22 @@ app.init = function(){
   neptunePath = app.neptuneOrbit[1]
   plutoPath = app.plutoOrbit[1]
 
-  //Add the stars to the scene
-  app.stars = app.createStars()
-  app.scene.add( app.stars )
-
-  // var loader = new THREE.STLLoader();
-  // loader.load( './models/stl/slotted_disk.stl', function ( geometry ) {
-  // scene.add( new THREE.Mesh( geometry ) );
-  // });
-
   // Camera has: field of view, ratio, near, far
   app.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000000000)
   app.camera.position.set(60,10,-10);
   app.camera.lookAt( app.scene.position );
   app.scene.add( app.camera );
 
-  // //Add background
-  // var sphere = new THREE.Mesh(
-  //   new THREE.SphereGeometry(10000000, 32, 32),
-  //   new THREE.MeshBasicMaterial({
-  //     map: THREE.TextureLoader('./assets/milky1.png')
-  //   })
-  // );
-  // sphere.scale.x = -1;
-  // app.scene.add(sphere)
-
   //Orbital controls to move around space
   app.controls = new THREE.OrbitControls( app.camera, app.renderer.domElement );
   app.controls.target.set( app.planetStart[0].x, app.planetStart[0].y, app.planetStart[0].z );
-  // debugger;
-  app.controls.smoothZoom = true;
-  app.controls.enableDamping = true;
-  app.controls.zoomDampingFactor = 0.9;
-  app.controls.smoothZoomSpeed = 8.0;
+  app.controls.minDistance=2;
 
   //Dat gui controller
   app.gui = new dat.GUI();
   app.gui.add( app.controller, 'rotationSpeed', 0, 1.5 );
   app.gui.add( app.controller, 'sunScale', 1.0, 10.0 ).onChange(function(val){
-    app.sun.scale.set(val*600, val*600, val*600);
+    sun.scale.set(val*600, val*600, val*600);
   });
   app.gui.add( app.controller, 'planetScale', 1.0, 500.0 ).onChange(function(val){
     mercury.scale.set(val * app.planetData[0].planetRadius, val * app.planetData[0].planetRadius, val * app.planetData[0].planetRadius);
@@ -332,6 +310,7 @@ app.init = function(){
     pluto.scale.set(val * app.planetData[8].planetRadius, val * app.planetData[8].planetRadius, val * app.planetData[8].planetRadius);
   });
    app.gui.add(app.controller , 'displayTrajectories');
+   app.gui.add(app.controller, 'view', [ 'voyager', 'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto' ] );
 
 
   // Attach renderer to the page
@@ -370,16 +349,6 @@ app.createSpotlight = function(){
   return spotlight;
 };
 
-app.createPlanet = function( orbit, radius, xPosition, yPosition, zPosition ){
-  radius = radius * 20;
-  var sphereGeometry = new THREE.SphereGeometry( radius, 30, 30 );
-  var material  = new THREE.MeshPhongMaterial()
-  material.map = THREE.TextureLoader('assets/sun_detailed.png')
-  var planet = new THREE.Mesh( sphereGeometry, material );
-  planet.position.set( xPosition, yPosition, zPosition );
-  return planet;
-};
-
 app.createLineFromSpline = function( spline ){
   var lineMaterial = new THREE.LineBasicMaterial({
     color: 0x818181
@@ -396,7 +365,6 @@ app.createCircle = function( radius, angle ){
   var segments = 1000;
   var material = new THREE.LineBasicMaterial( { color: 0xFFFFFF } );
   var geometry = new THREE.CircleGeometry( radius, segments ).rotateX(angle).rotateZ(Math.PI);
-  // var path = new THREE.Path( app.geometry.getPoints( 100 ) );
 
   geometry.vertices.shift();
   var path = geometry["vertices"]
@@ -406,23 +374,19 @@ app.createCircle = function( radius, angle ){
   var circle = new THREE.Line( geometry, material );
   var planetPath = new THREE.CatmullRomCurve3( path );
 
-  // debugger;
-
   var linePath = app.createLineFromSpline( planetPath );
   return [linePath, planetPath]
 }
 
-// var sunPoint = new THREE.PointLight(0xffe600, 3, 150);
-// sunPoint.position.set( 0, 350, 0 );
-
-
 app.animate = function(){
   requestAnimationFrame( app.animate );
-  // app.renderer.render( app.scene, app.camera );
   app.render()
 };
 
 app.render = function() {
+  //Change what the camera is centered on
+  var planet = app.controller.view
+  window[planet].add( app.camera )
 
   // sets initial position of planet based on CatmullRomCurve3
   var pm = mercuryPath.getPoint( m );
@@ -475,67 +439,17 @@ app.render = function() {
       // debugger;
       $("#doy").text("Day:      " + infoPoints[i].doy)
       $("#year").text("Year:      " + infoPoints[i].year)
-      $("#x").text("X:      " + infoPoints[i].x + " x 10^3 km")
-      $("#y").text("Y:      " + infoPoints[i].y + " x 10^3 km")
-      $("#z").text("Z:      " + infoPoints[i].z + " x 10^3 km")
-      // console.log(infoPoints[i].doy)
-      // console.log(infoPoints[i].year)
+      $("#x").text(infoPoints[i].x + " x 10^3 km")
+      $("#y").text(infoPoints[i].y + " x 10^3 km")
+      $("#z").text(infoPoints[i].z + " x 10^3 km")
     }
   }
 
   t = (t >= 1) ? 0 : t += 0.00005*app.controller.rotationSpeed;
-	// app.camera.lookAt( app.sun.position );
-  // 1.2775
 
   app.stats.update();
   app.renderer.render( app.scene, app.camera );
 }
-
-app.createStars = function(){
-  var distance = 500000000;
-  var geometry = new THREE.Geometry();
-
-  for (var i = 0; i < 20000; i++) {
-
-      var vertex = new THREE.Vector3();
-
-      var theta = THREE.Math.randFloatSpread(360);
-      var phi = THREE.Math.randFloatSpread(360);
-
-      vertex.x = distance * Math.sin(theta) * Math.cos(phi);
-      vertex.y = distance * Math.sin(theta) * Math.sin(phi);
-      vertex.z = distance * Math.cos(theta);
-
-      geometry.vertices.push(vertex);
-  }
-  return new THREE.Points(geometry, new THREE.PointsMaterial({color: 0xffffff}));
-  particles.boundingSphere = 50;
-}
-
-app.UpdateParticles = function(){
-        for( var i = 0; i < particles.app.earthOrbit[1].vertices.length; i++ ){
-            var planet = app.earth.geometry.vertices[i];
-            var path = particle.path;
-            particle.lerpN += 0.05;
-            if(particle.lerpN > 1){
-                particle.lerpN = 0;
-                particle.moveIndex = particle.nextIndex;
-                particle.nextIndex++;
-                if( particle.nextIndex >= path.length ){
-                    particle.moveIndex = 0;
-                    particle.nextIndex = 1;
-                }
-            }
-
-            var currentPoint = path[particle.moveIndex];
-            var nextPoint = path[particle.nextIndex];
-
-
-            particle.copy( currentPoint );
-            particle.lerp( nextPoint, particle.lerpN );
-        }
-        particles.geometry.verticesNeedUpdate = true;
-    };
 
 app.onResize = function(){
   app.width = window.innerWidth;
@@ -554,18 +468,5 @@ app.addStats = function(){
   document.getElementById("stats").appendChild(stats.domElement);
   return stats;
 }
-
-if ( 'bluetooth' in navigator === false ) {
-  button.style.display = 'none';
-  message.innerHTML = 'This browser doesn\'t support the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API" target="_blank">Web Bluetooth API</a> :(';
-}
-
-var axis = new THREE.Vector3();
-var quaternion = new THREE.Quaternion();
-var quaternionHome = new THREE.Quaternion();
-var initialised = false;
-var timeout = null;
-
-
 
 window.addEventListener("resize", app.onResize, false);
