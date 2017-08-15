@@ -439,8 +439,8 @@ app.render = function() {
       day += 1.59*app.controller.rotationSpeed;
       i = Math.floor(day)
       // debugger;
-      $("#doy").text("Day:      " + infoPoints[i].doy)
-      $("#year").text("Year:      " + infoPoints[i].year)
+      $("#doy").text("D.O.Y : " + infoPoints[i].doy)
+      $("#year").text("Year : " + infoPoints[i].year)
       $("#x").text(infoPoints[i].x + " x 10^3 km")
       $("#y").text(infoPoints[i].y + " x 10^3 km")
       $("#z").text(infoPoints[i].z + " x 10^3 km")
