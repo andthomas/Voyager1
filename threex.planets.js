@@ -2,7 +2,7 @@ var THREEx = THREEx || {}
 
 THREEx.Planets	= {}
 
-THREEx.Planets.baseURL	= 'voyager1/'
+THREEx.Planets.baseURL	= 'Voyager1/'
 
 // from http://planetpixelemporium.com/
 // material.map = THREE.TextureLoader('images/preview_sun.jpg')
