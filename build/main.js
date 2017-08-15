@@ -36,6 +36,7 @@ var timeout = null;
 //Dat GUI controller default values
 app.controller = {
   rotationSpeed: 0.00000004,
+  voyagerScale: 0.004,
   sunScale: 1,
   planetScale: 1,
   displayTrajectories: true,
@@ -135,11 +136,6 @@ app.init = function(){
   app.ambient = new THREE.AmbientLight( 0x0b0b0b );
   app.scene.add( app.ambient );
 
-  // Add Sun
-  sun = THREEx.Planets.createSun()
-  sun.scale.set(600,600,600)
-  app.scene.add( sun );
-
   // Add daydream controller
   $('#button').on( 'click', function () {
     console.log("Initialise daydream");
@@ -174,9 +170,6 @@ app.init = function(){
         }
         app.camera.quaternion.copy( quaternionHome );
         app.camera.quaternion.multiply( quaternion );
-        // button1.material.emissive.g = state.isClickDown ? 0.5 : 0;
-        // button2.material.emissive.g = state.isAppDown ? 0.5 : 0;
-        // button3.material.emissive.g = state.isHomeDown ? 0.5 : 0;
         touch.position.x = ( state.xTouch * 2 - 1 ) / 1000;
         touch.position.y = - ( state.yTouch * 2 - 1 ) / 1000;
         touch.visible = state.xTouch > 0 && state.yTouch > 0;
@@ -185,6 +178,11 @@ app.init = function(){
 
     controller.connect();
   } );
+
+  // Add Sun
+  sun = THREEx.Planets.createSun()
+  sun.scale.set(600,600,600)
+  app.scene.add( sun );
 
   var spriteMaterial = new THREE.SpriteMaterial(
   {
@@ -195,7 +193,6 @@ app.init = function(){
   var sprite = new THREE.Sprite( spriteMaterial );
   sprite.scale.set(0.01, 0.01, 0.01);
   sun.add(sprite); // this centers the glow at the sun
-  // debugger;
 
   //Add Planets
   mercury = THREEx.Planets.createMercury()
@@ -296,6 +293,10 @@ app.init = function(){
   app.gui.add( app.controller, 'rotationSpeed', 0, 1.5 );
   app.gui.add( app.controller, 'sunScale', 1.0, 10.0 ).onChange(function(val){
     sun.scale.set(val*600, val*600, val*600);
+    sprite.scale.set(val*0.01, val*0.01, val*0.01);
+  });
+  app.gui.add( app.controller, 'voyagerScale', 0.004, 10.0 ).onChange(function(val){
+    voyager.scale.set(val, val, val);
   });
   app.gui.add( app.controller, 'planetScale', 1.0, 500.0 ).onChange(function(val){
     mercury.scale.set(val * app.planetData[0].planetRadius, val * app.planetData[0].planetRadius, val * app.planetData[0].planetRadius);
@@ -310,8 +311,9 @@ app.init = function(){
     neptune.scale.set(val * app.planetData[7].planetRadius, val * app.planetData[7].planetRadius, val * app.planetData[7].planetRadius);
     pluto.scale.set(val * app.planetData[8].planetRadius, val * app.planetData[8].planetRadius, val * app.planetData[8].planetRadius);
   });
-   app.gui.add(app.controller , 'displayTrajectories');
+  //  app.gui.add(app.controller , 'displayTrajectories');
    app.gui.add(app.controller, 'view', [ 'voyager', 'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto' ] );
+
 
   // Attach renderer to the page
   document.getElementById("output").appendChild( app.renderer.domElement );
