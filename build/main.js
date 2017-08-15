@@ -6,7 +6,7 @@ var mercuryPath, venusPath, earthPath, marsPath, jupiterPath, saturnPath, uranus
 var m = 0.2163;
 var v = 0.4663;
 var t = 0;
-var e = 0.2103;
+var e = 0.21823;
 var ma = 0.43;
 var j = 0.395;
 var s = 0.566;
@@ -35,9 +35,9 @@ var timeout = null;
 
 //Dat GUI controller default values
 app.controller = {
-  rotationSpeed: 0.0004,
+  rotationSpeed: 0.00000004,
   sunScale: 1,
-  planetScale: 500,
+  planetScale: 1,
   displayTrajectories: true,
   view: "voyager"
 };
@@ -65,9 +65,10 @@ $.ajax({
     function addModelToScene( geometry, materials ) {
       var material = new THREE.MeshFaceMaterial(materials);
       voyager = new THREE.Mesh( geometry, material );
-      voyager.scale.set(40,40,40);
+      voyager.scale.set(0.004,0.004,0.004);
       voyager.position.set(-31430.2, 1, 146248.8);
       app.scene.add( voyager );
+      app.scene.add( app.line );
 
       // voyager.rotation.x = 1.5 *  Math.PI;
       // voyager.rotation.y = Math.PI / 2;
@@ -80,7 +81,7 @@ $.ajax({
 })
 .done(function(){
     app.init()
-    app.scene.add( app.line );
+
 })
 
 app.init = function(){
@@ -187,7 +188,7 @@ app.init = function(){
 
   var spriteMaterial = new THREE.SpriteMaterial(
   {
-    map: new THREE.ImageUtils.loadTexture( 'assets/glow.png' ),
+    map: new THREE.TextureLoader( 'assets/glow.png' ),
     useScreenCoordinates: false,
     color: 0xe6af2e, transparent: false, blending: THREE.AdditiveBlending
   });
@@ -198,18 +199,18 @@ app.init = function(){
 
   //Add Planets
   mercury = THREEx.Planets.createMercury()
-  var mercuryRadius = app.planetData[0]["planetRadius"] * 500
+  var mercuryRadius = app.planetData[0]["planetRadius"]
   mercury.scale.set(mercuryRadius, mercuryRadius, mercuryRadius)
   app.scene.add( mercury );
 
   venus = THREEx.Planets.createVenus()
-  var venusRadius = app.planetData[1]["planetRadius"] * 500
+  var venusRadius = app.planetData[1]["planetRadius"]
   venus.scale.set(venusRadius, venusRadius, venusRadius)
   app.scene.add( venus );
 
   earth = THREEx.Planets.createEarth()
   earth.material.shininess = 10000000
-  var earthRadius = app.planetData[2]["planetRadius"] * 500
+  var earthRadius = app.planetData[2]["planetRadius"]
   earth.scale.set(earthRadius, earthRadius, earthRadius)
   app.scene.add( earth );
   mesh	= THREEx.Planets.createEarthCloud()
@@ -217,17 +218,17 @@ app.init = function(){
 	app.scene.add(mesh)
 
   mars = THREEx.Planets.createMars()
-  var marsRadius = app.planetData[3]["planetRadius"] * 500
+  var marsRadius = app.planetData[3]["planetRadius"]
   mars.scale.set(marsRadius, marsRadius, marsRadius)
   app.scene.add( mars );
 
   jupiter = THREEx.Planets.createJupiter()
-  var jupiterRadius = app.planetData[4]["planetRadius"] * 500;
+  var jupiterRadius = app.planetData[4]["planetRadius"]
   jupiter.scale.set(jupiterRadius, jupiterRadius, jupiterRadius)
   app.scene.add( jupiter );
 
   saturn = THREEx.Planets.createSaturn()
-  var saturnRadius = app.planetData[5]["planetRadius"] * 500;
+  var saturnRadius = app.planetData[5]["planetRadius"]
   saturn.scale.set(saturnRadius, saturnRadius, saturnRadius)
   app.scene.add( saturn );
   // var saturnRings	= THREEx.Planets.createSaturnRing()
@@ -235,17 +236,17 @@ app.init = function(){
   // app.scene.add(saturnRings)
 
   uranus = THREEx.Planets.createUranus()
-  var uranusRadius = app.planetData[6]["planetRadius"] * 500;
+  var uranusRadius = app.planetData[6]["planetRadius"]
   uranus.scale.set(uranusRadius, uranusRadius, uranusRadius)
   app.scene.add( uranus );
 
   neptune = THREEx.Planets.createNeptune()
-  var neptuneRadius = app.planetData[7]["planetRadius"] * 500;
+  var neptuneRadius = app.planetData[7]["planetRadius"]
   neptune.scale.set(neptuneRadius, neptuneRadius, neptuneRadius)
   app.scene.add( neptune );
 
   pluto = THREEx.Planets.createPluto()
-  var plutoRadius = app.planetData[8]["planetRadius"] * 500;
+  var plutoRadius = app.planetData[8]["planetRadius"]
   pluto.scale.set(plutoRadius, plutoRadius, plutoRadius)
   app.scene.add( pluto );
 
@@ -311,7 +312,6 @@ app.init = function(){
   });
    app.gui.add(app.controller , 'displayTrajectories');
    app.gui.add(app.controller, 'view', [ 'voyager', 'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto' ] );
-
 
   // Attach renderer to the page
   document.getElementById("output").appendChild( app.renderer.domElement );
@@ -385,8 +385,10 @@ app.animate = function(){
 
 app.render = function() {
   //Change what the camera is centered on
+
   var planet = app.controller.view
   window[planet].add( app.camera )
+
 
   // sets initial position of planet based on CatmullRomCurve3
   var pm = mercuryPath.getPoint( m );
