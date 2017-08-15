@@ -2,7 +2,7 @@ var THREEx = THREEx || {}
 
 THREEx.Planets	= {}
 
-THREEx.Planets.baseURL	= 'Voyager1/'
+THREEx.Planets.baseURL;
 
 // from http://planetpixelemporium.com/
 // material.map = THREE.TextureLoader('images/preview_sun.jpg')
@@ -45,7 +45,7 @@ THREEx.Planets.createVenus	= function(){
 THREEx.Planets.createEarth	= function(){
 	var geometry	= new THREE.SphereGeometry(0.5, 32, 32)
 	var material	= new THREE.MeshPhongMaterial({
-		map		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'voyager1/images/earthmap1k.jpg'),
+		map		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'images/earthmap1k.jpg'),
 		// bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'images/earthbump1k.jpg'),
 		bumpScale	: 0.05,
 		// specularMap	: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'images/earthspec1k.jpg'),
