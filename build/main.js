@@ -101,7 +101,7 @@ app.init = function(){
   // app.scene.add( app.axes );
 
   // Renderer
-  app.renderer = Detector.webgl? new THREE.WebGLRenderer(): new THREE.CanvasRenderer();
+  app.renderer = new THREE.WebGLRenderer();
   app.renderer.setSize( app.width, app.height );
   app.renderer.setClearColor( 0x000000, 1 )
 
