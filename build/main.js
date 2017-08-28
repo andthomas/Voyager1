@@ -1,3 +1,5 @@
+
+
 var app = app || {};
 
 //Define globals
@@ -13,6 +15,7 @@ var s = 0.566;
 var n = 0.01;
 var u = 0.96;
 var p = 0.05;
+
 var day = 1;
 
 var sun, mercury, venus, earth, mesh, mars, jupiter, saturn, saturnRings, uranus, neptune, pluto, voyager, voyagerCam;
@@ -98,7 +101,7 @@ app.init = function(){
   // app.scene.add( app.axes );
 
   // Renderer
-  app.renderer = new THREE.WebGLRenderer();
+  app.renderer = Detector.webgl? new THREE.WebGLRenderer(): new THREE.CanvasRenderer();
   app.renderer.setSize( app.width, app.height );
   app.renderer.setClearColor( 0x000000, 1 )
 
@@ -293,7 +296,7 @@ app.init = function(){
   app.gui.add( app.controller, 'rotationSpeed', 0, 1.5 );
   app.gui.add( app.controller, 'sunScale', 1.0, 10.0 ).onChange(function(val){
     sun.scale.set(val*600, val*600, val*600);
-    sprite.scale.set(val*0.01, val*0.01, val*0.01);
+    // sprite.scale.set(val*0.01, val*0.01, val*0.01);
   });
   app.gui.add( app.controller, 'voyagerScale', 0.004, 10.0 ).onChange(function(val){
     voyager.scale.set(val, val, val);
